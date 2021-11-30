@@ -106,7 +106,7 @@ desktop_select () {
 }
 
 
-# Remove systemd file and shell script after install is complete.
+# Remove shell script after install is complete.
 remove_important () {
   clear
   print "Deleting install script from system..."

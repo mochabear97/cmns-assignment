@@ -327,7 +327,7 @@ copy_important () {
     chmod +x ~/cmns-assignment/exiles-desktop-installer.sh
 
     # Copy desktop environment install script to new system bin.
-    cp ~/cmns-assignment/exiles-desktop-installer.sh /etc/profile
+    cp ~/cmns-assignment/exiles-desktop-installer.sh /mnt/etc/profile
 
     sleep 5.0s
 }
