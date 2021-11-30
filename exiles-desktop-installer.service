@@ -1,0 +1,8 @@
+[Unit]
+Description=Executing desktop envrionemnt install script...
+
+[Service]
+ExecStart=/bin/exiles-desktop-installer.sh
+
+[Install]
+WantedBy=multi-user.target
