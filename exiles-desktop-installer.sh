@@ -110,9 +110,7 @@ desktop_select () {
 remove_important () {
   clear
   print "Deleting install script from system..."
-  systemctl disable exiles-desktop-installer.service
-  rm -rf /bin/exiles-desktop-installer.sh
-  rm -rf /etc/systemd/system/exiles-desktop-installer.service
+  rm -rf /etc/profile/exiles-desktop-installer.sh
   sleep 5.0s
 }
 

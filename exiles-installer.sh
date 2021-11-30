@@ -270,7 +270,7 @@ system_setup () {
 
     print "\nConfiguring system hardware clock..."
     arch-chroot /mnt hwclock --systohc
-    sleep 1.0ss
+    sleep 1.0s
 
     print "\nGenerating locales..."
     arch-chroot /mnt locale-gen &>/dev/null
@@ -327,12 +327,7 @@ copy_important () {
     chmod +x ~/cmns-assignment/exiles-desktop-installer.sh
 
     # Copy desktop environment install script to new system bin.
-    cp ~/cmns-assignment/exiles-desktop-installer.sh /mnt/bin
-
-    # Copy systemd service file to new system root.
-    cp ~/cmns-assignment/exiles-desktop-installer.service /mnt/lib/systemd/system/
-
-    arch-chroot /mnt systemctl enable exiles-desktop-installer.service
+    cp ~/cmns-assignment/exiles-desktop-installer.sh /etc/profile
 
     sleep 5.0s
 }
