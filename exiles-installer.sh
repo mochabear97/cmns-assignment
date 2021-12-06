@@ -1,14 +1,23 @@
 #! /bin/bash
 
-# A simple Arch Linux install script
+# A simple Arch Linux install script.
 
 #################
 #   Functions   #
 #################
 
-
-# Blue text print.
+# Green text print.
 print () {
+    echo -e "\x1b[1;32m$1\e[0m"
+}
+
+# Blue text print info.
+print_i () {
+    echo -e "\x1b[1;94m[i] $1\e[0m"
+}
+
+# Blue text print info (without the [i]).
+print_b () {
     echo -e "\x1b[1;94m$1\e[0m"
 }
 
@@ -17,11 +26,16 @@ print_w () {
     echo -e "\x1b[0;33m[w] $1\e[0m"
 }
 
+# Yellow text print warnings (without the [w]).
+print_y () {
+    echo -e "\x1b[0;33m$1\e[0m"
+}
+
 # Check if script is being ran as root and exit if it isn't.
 root_check () {
     if [ "$EUID" -ne 0 ] 
         then 
-        echo -e "Please run this sript as root."
+        print_w "Please run this sript as root."
         sleep 3.0s
         exit
     fi
@@ -31,12 +45,15 @@ root_check () {
 welcome () {
     print "##############################"
     print "#                            #"
-    print "#   Exiles Arch Installer    #"
+    print "#   Exile's Arch Installer   #"
     print "#                            #"
     print "#   Author: The Exiles       #"
     print "#   Version: 1.0.0           #"
     print "#                            #"
     print "##############################"
+    echo -e "\n"
+    print_w "NOTE: this install script is intended for"
+    print_y "UEFI based systems and does not support BIOS boot."
 }
 
 # Ask the user if they want to install this script.
@@ -60,6 +77,7 @@ continue_check () {
 intitialization () {
    clear
    print "Initializing..."
+   timedatectl set-timezone "$(curl -s http://ip-api.com/line?fields=timezone)"
    timedatectl set-ntp true
    sleep 3.0s
 }
@@ -68,7 +86,7 @@ intitialization () {
 disk_selector () {
     clear
     print "Please select the disk where Arch Linux will be installed:"
-    select ENTRY in $(lsblk -dpnoNAME|grep -P "/dev/sd|nvme|");
+    select ENTRY in $(lsblk -dpnoNAME | grep -P "/dev/sd|nvme|");
     do
         DISK=$ENTRY
         print "Arch Linux will be installed on $DISK"
@@ -96,7 +114,120 @@ disk_confirm () {
     esac
 }
 
-# Ask about memory size and set swap varriable accoringly.
+# Hibernation ask
+hibernation_selector () {
+    clear
+    print_i "Hibernation is when you put a computer to sleep and store"
+    print_b "temporary data onto the hard disk instead of memory."
+    read -r -p "Will you use hibernation at all with your new system? (y/n)" choice
+    case $choice in
+        "" ) hibernation=yes
+            ;;
+        [Yy] ) hibernation=yes
+              ;;
+        [Nn] ) hibernation=no
+              ;;
+        * )
+    esac
+}
+
+# Ask about memory size and set swap varriable accoringly. [IN PROGRESS]
+mem_selector () {
+    clear
+    print "Please enter how much RAM (memory) your system contains."
+    print_i "Available Sizes: 8, 12, 16, 24, 32, 64 & 128"
+    read -r -p "A size of 8GB or greater is required. (8-128): " choice
+    case $choice in
+        8 ) mem=8
+           ;;
+        12 ) mem=12
+            ;;
+        16 ) mem=16
+            ;;
+        24 ) mem=24
+            ;;
+        32 ) mem=32
+            ;;
+        64 ) mem=64
+            ;;
+        128 ) mem=128
+             ;;
+        * ) print_w "Please enter a valid size."
+            sleep 5.0s
+            swap_selector
+           ;;
+    esac
+}
+
+# Select swap size based on whether hibernation was selected and RAM size.
+swap_selector () {
+    # With hibernation.
+    if [ $mem == 8 ] && [ $hibernation == yes ]
+        then
+        swap_size=11
+    fi
+
+    if [ $mem == 12 ] && [ $hibernation == yes ]
+        then
+        swap_size=15
+    fi
+
+    if [ $mem == 16 ] && [ $hibernation == yes ]
+        then
+        swap_size=20
+    fi
+
+    if [ $mem == 24 ] && [ $hibernation == yes ]
+        then
+        swap_size=29
+    fi
+
+    if [ $mem == 32 ] && [ $hibernation == yes ]
+        then
+        swap_size=38
+    fi
+
+    if [ $mem == 64 ] && [ $hibernation == yes ]
+        then
+        swap_size=72
+    fi
+
+    if [ $mem == 128 ] && [ $hibernation == yes ]
+        then
+        swap_size=139
+    fi
+
+    # Without hibernation.
+    if [ $mem == 8 ] || [ $mem == 12 ] && [ $hibernation == no ]
+        then
+        swap_size=3
+    fi
+
+    if [ $mem == 16 ] && [ $hibernation == no ]
+        then
+        swap_size=4
+    fi
+
+    if [ $mem == 24 ] && [ $hibernation == no ]
+        then
+        swap_size=5
+    fi
+
+    if [ $mem == 32 ] && [ $hibernation == no ]
+        then
+        swap_size=6
+    fi
+
+    if [ $mem == 64 ] && [ $hibernation == no ]
+        then
+        swap_size=8
+    fi
+
+    if [ $mem == 128 ] && [ $hibernation == no ]
+        then
+        swap_size=11
+    fi
+}
 
 # Creating a new partition scheme.
 create_partitions () {
@@ -104,14 +235,14 @@ create_partitions () {
     print "Creating the partitions on $DISK..."
     parted -s "$DISK" \
         mklabel gpt \
-        mkpart primary fat32 1MiB 251MiB \
-        set 1 ESP on \
-        mkpart primary linux-swap 251Mib 6.26GiB \
-        mkpart primary ext4 6.26GiB 100% \
-    sleep 5.0s
+        mkpart ESP fat32 1MiB 251MiB \
+        set 1 esp on \
+        mkpart primary linux-swap 251Mib "$swap_size".26GiB \
+        mkpart primary ext4 "$swap_size".26GiB 100% \
+    sleep 10.0s
 }
 
-#format disk partitions
+# Format disk partitions
 format_partitions () {
     clear
     print "Formatting partitions now..."
@@ -146,7 +277,7 @@ microcode_detector () {
 kernel_selector () {
     clear
     print "***Kernels***"
-    print "1) Stable: Vanilla Linux kernel with a few specific Arch Linux patches applied"
+    print "\n1) Vanilla: Stable Linux kernel with a few specific Arch Linux patches applied"
     print "2) Hardened: A security-focused Linux kernel"
     print "3) LTS: Long-term support (LTS) Linux kernel"
     print "4) Zen: A Linux kernel optimized for desktop usage"
@@ -171,10 +302,10 @@ kernel_selector () {
 network_selector () {
     clear
     print "***Network Utilities***"
-    print "1) IWD: iNet wireless daemon is a wireless daemon for Linux written by Intel (WiFi-only)"
-    print "2) NetworkManager: Universal network utility to automatically connect to networks (both WiFi and Ethernet)"
-    print "3) dhcpcd: Basic DHCP client (Ethernet only or VMs)"
-    print "4) I will do this on my own (only advanced users)"
+    print "\n1) IWD: iNet wireless daemon is a wireless daemon for Linux written by Intel (WiFi-only)"
+    print "2) dhcpcd: Basic DHCP client (Ethernet only or VMs)"
+    print "3) NetworkManager: Universal network utility to automatically connect to networks (both WiFi and Ethernet)"
+    print "4) I will do this on my own (ADVANCED USERS ONLY)"
     read -r -p "Insert the number of the corresponding networking utility. (1-4): " choice
     case $choice in
         1 ) print "Installing IWD."    
@@ -184,20 +315,22 @@ network_selector () {
             systemctl enable iwd --root=/mnt &>/dev/null
             sleep 2.0s
             ;;
-        2 ) print "Installing NetworkManager."
-            pacstrap /mnt networkmanager
-            sleep 2.0s
-            print "Enabling NetworkManager."
-            systemctl enable NetworkManager --root=/mnt &>/dev/null
-            sleep 2.0s
-            ;;
-        3 ) print "Installing dhcpcd."
+        2 ) print "Installing dhcpcd."
             pacstrap /mnt dhcpcd
             sleep 2.0s
             print "Enabling dhcpcd."
             systemctl enable dhcpcd --root=/mnt &>/dev/null
             sleep 2.0s
             ;; 
+        3 ) print "Installing NetworkManager."
+            pacstrap /mnt networkmanager
+            pacstrap /mnt dhcpcd
+            sleep 2.0s
+            print "Enabling NetworkManager."
+            systemctl enable NetworkManager --root=/mnt &>/dev/null
+            systemctl enable dhcpcd --root=/mnt &>/dev/null
+            sleep 2.0s
+            ;;
         4 ) ;;
         * ) print_w "You did not enter a valid selection."
             sleep 2.0s
@@ -212,17 +345,17 @@ basic_install () {
     print "Installing base system now..."
     sleep 3.0s
 
-    pacstrap /mnt base $microcode $kernel linux-firmware grub efibootmgr \
-    base-devel man-db man-pages neovim sudo texinfo zsh
+    pacstrap /mnt base $microcode $kernel linux-firmware git grub efibootmgr \
+    base-devel man-db man-pages os-prober sudo texinfo
 }
 
 # Set a hostname for the new system.
-hostname_selector () {
+hostname_creator () {
     clear
     read -r -p "Please enter the hostname for your new system: " hostname
     if [ -z "$hostname" ]; then
         print_w "You need to enter a hostname in order to continue."
-        hostname_selector
+        hostname_creator
     fi
     echo "$hostname" > /mnt/etc/hostname
 }
@@ -243,7 +376,7 @@ locale_selector () {
         print_w "en_US will be used as default locale."
         locale="en_US"
     fi
-    echo "$locale.UTF-8 UTF-8"  > /mnt/etc/locale.gen
+    sed -i "s/#$locale.UTF-8/$locale.UTF-8/g" /mnt/etc/locale.gen
     echo "LANG=$locale.UTF-8" > /mnt/etc/locale.conf
 }
 
@@ -264,8 +397,7 @@ system_setup () {
     print "Beginning system configuration..."
     sleep 3.0s
     print "\nSetting timezone..."
-    arch-chroot /mnt ln -sf /usr/share/zoneinfo/"$(curl -s http://ip-api.com/line?fields=timezone)" \
-    /etc/localtime &>/dev/null
+    arch-chroot /mnt ln -sf /usr/share/zoneinfo/"$(curl -s http://ip-api.com/line?fields=timezone)" /etc/localtime &>/dev/null
     sleep 1.0s
 
     print "\nConfiguring system hardware clock..."
@@ -290,11 +422,90 @@ system_setup () {
     sleep 1.0s
 }
 
+# Laptop check (Install acpi & acpid)
+check_laptop () {
+    clear
+    read -r -p "Are you installing Arch Linux onto a laptop? (y/n): " choice
+    case $choice in
+        "" ) clear
+             print "Installing necessary files for laptops..."
+             sleep 2.0s
+             arch-chroot /mnt pacman -S --noconfirm acpi acpid
+             arch-chroot /mnt systemctl enable acpid.service
+             ;;
+        [Yy] ) clear
+               print "Installing necessary files for laptops..."
+               sleep 2.0s
+               arch-chroot /mnt pacman -S --noconfirm acpi acpid
+               arch-chroot /mnt systemctl enable acpid.service
+               ;;
+        [Nn] ) ;;
+        * ) clear
+            print "Not a valid selection. Please try again."
+            sleep 2.0s
+            check_laptop
+    esac
+}
+
+# Install GPU drivers if detected.
+gpu_driver_check () {
+    clear
+    print "Checking for graphics card..."
+    NVIDIA_CHECK=$(lspci -k | grep -A 2 -E "(VGA|3D)" | grep -o "NVIDIA")
+    AMD_CHECK=$(lspci -k | grep -A 2 -E "(VGA|3D)" | grep -o "Advanced Micro Devices")
+    if [ "$NVIDIA_CHECK" == "NVIDIA" ] && [ $kernel == linux ]
+        then
+        clear
+        print "Nvidia graphics detected. Installing drivers now..."
+        sleep 3.0s
+        sed -i "/\[multilib\]/,/Include/"'s/^#//g' /mnt/etc/pacman.conf
+        arch-chroot /mnt pacman -Syy
+        arch-chroot /mnt pacman -S --noconfirm nvidia lib32-nvidia-utils nvidia-settings
+        sleep 2.0s
+    fi
+
+    if [ "$NVIDIA_CHECK" == "NVIDIA" ] && [ $kernel == linux-lts ]
+        then
+        clear
+        print "Nvidia graphics detected. Installing drivers now..."
+        sleep 3.0s
+        sed -i "/\[multilib\]/,/Include/"'s/^#//g' /mnt/etc/pacman.conf
+        arch-chroot /mnt pacman -Syy
+        arch-chroot /mnt pacman -S --noconfirm nvidia-lts lib32-nvidia-utils nvidia-settings
+        sleep 2.0s
+    fi
+
+    if [ "$NVIDIA_CHECK" == "NVIDIA" ] && [ $kernel == linux-hardened ] || [ $kernel == linux-zen ]
+        then
+        clear
+        print "Nvidia graphics detected. Installing drivers now..."
+        sleep 3.0s
+        sed -i "/\[multilib\]/,/Include/"'s/^#//g' /mnt/etc/pacman.conf
+        arch-chroot /mnt pacman -Syy
+        arch-chroot /mnt pacman -S --noconfirm nvidia-dkms lib32-nvidia-utils nvidia-settings
+        sleep 2.0s
+    fi
+
+    if [ "$AMD_CHECK" == "Advanced Micro Devices" ]
+        then
+        clear
+        print "AMD graphics detected. Installing drivers now..."
+        sleep 3.0s
+        sed -i "/\[multilib\]/,/Include/"'s/^#//g' /mnt/etc/pacman.conf
+        arch-chroot /mnt pacman -Syy
+        arch-chroot /mnt pacman -S --noconfirm mesa lib32-mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon mesa-vdpau lib32-mesa-vdpau
+        sleep 2.0s
+    fi
+}
+
 # Set root password.
 root_set() {
     clear
     print "Please create a password for the root user."
-    arch-chroot /mnt passwd root
+    until arch-chroot /mnt passwd root
+    do
+        print_w "You must enter a valid matching root password to continue."
+    done
     sleep 3.0s
 }
 
@@ -304,10 +515,12 @@ create_user () {
   read -r -p "Please Enter a name for a user account (leave empty and press enter to skip): "  username
   if [ -n "$username" ]; then
     arch-chroot /mnt useradd -m "$username"
-    print "\nPlease enter a password for the new user."
-    arch-chroot /mnt passwd "$username"
+    print "\nPlease enter a password for $username."
+    until arch-chroot /mnt passwd "$username"
+    do
+        print_w "Please try again."
+    done
     sleep 3.0s
-    clear
     echo -e "\x1b[1;34mAdding\e[0m \x1b[0;33m$username\e[0m \x1b[1;34mwith root privileges.\e[0m"
     arch-chroot /mnt gpasswd -a "$username" adm
     arch-chroot /mnt gpasswd -a "$username" rfkill
@@ -317,26 +530,37 @@ create_user () {
   fi
 }
 
-# Copy systemd file with desktop envrionemnt
-# install script to be executed after reboot.
+# Copy GUI install script to new system
+# to be ran after rebooting IF user was created.
 copy_important () {
-    clear
-    print "Setting up desktop environment selector"
-    print "to be executed after reboot..."
-    # Make exiles-desktop-installer.sh executable
-    chmod +x ~/cmns-assignment/exiles-desktop-installer.sh
-
-    # Copy desktop environment install script to new system bin.
-    cp ~/cmns-assignment/exiles-desktop-installer.sh /mnt/etc/profile
-
-    sleep 5.0s
+    if [ -n "$username" ]
+        then
+        clear
+        print_i "A useful GUI installation script will be copied" 
+        print_b "over to the new root and launched after install..."
+        sleep 8.0s
+        # Make the GUI script executable and copy it to /mnt/etc/profile.d/
+        chmod +x ~/cmns-assignment/exiles-desktop-installer.sh
+        cp ~/cmns-assignment/exiles-desktop-installer.sh /mnt/etc/profile.d/exiles-desktop-installer.sh
+    else
+        clear
+        print_w "You did not create a user, this means the second script"
+        print_y "will not be copied over and cannot be accessed"
+        print_y "after reboot. If you wanted to access it, please"
+        print_y "Reinstall Arch Linux using this script."
+        echo -e "\n"
+        print_i "The second script allows you to install packages and a"
+        print_b "desktop environment or window manager of your choosing"
+        print_b "It also includes an automated install of paru for AUR support if need be."
+        sleep 30.0s
+    fi
 }
-
 
 ###############
 #   Program   #
 ###############
 
+# Check root first
 root_check
 
 # Start by clearing the terminal
@@ -348,27 +572,34 @@ continue_check
 intitialization
 disk_selector
 disk_confirm
+hibernation_selector
+mem_selector
+swap_selector
 create_partitions
 format_partitions
 microcode_detector
 kernel_selector
 network_selector
 basic_install
-hostname_selector
+hostname_creator
 gen_stab
 locale_selector
 keyboard_selector
 system_setup
+check_laptop
+gpu_driver_check
 root_set
 create_user
 copy_important
 
-# Print a message after installing then restarts the system.
+# Print a message after installing then restart the system.
 clear
 print "Installation of Arch Linux is now complete!"
-print "Computer will now restart in 30.0s..."
-sleep 30.0s
+print "Computer will now restart in 10.0s..."
+sleep 10.0s
 
 print "Exiting"
 reboot
+
+# Exit script.
 exit
