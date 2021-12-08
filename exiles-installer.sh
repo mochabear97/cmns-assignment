@@ -428,7 +428,7 @@ de_install () {
      then
      clear
      print "Cinnamon desktop environemnt will now be installed."
-     print "Along with some other usefull applications."
+     print "Along with some other useful applications."
      sleep 3.0s
      clear
      pacstrap /mnt archlinux-appstream-data audacity binutils \
@@ -455,7 +455,7 @@ de_install () {
     then
     clear
     print "$desktop desktop environment will now be installed."
-    print "Along with some other usefull applications."
+    print "Along with some other useful applications."
     sleep 5.0s
     clear
     pacstrap /mnt archlinux-appstream-data audacity binutils \
@@ -478,7 +478,7 @@ de_install () {
     then
     clear
     print "$desktop desktop environment will now be installed."
-    print "Along with some other usefull applications."
+    print "Along with some other useful applications."
     sleep 3.0s
     clear
     pacstap /mnt archlinux-appstream-data ark audacity binutils \
@@ -508,7 +508,7 @@ de_install () {
     then
     clear
     print "$desktop desktop environment will now be installed."
-    print "Along with some other usefull applications."
+    print "Along with some other useful applications."
     sleep 3.0s
     clear
     pacstrap /mnt archlinux-appstream-data ark audacity binutils \
@@ -522,8 +522,8 @@ de_install () {
     clear
     print "\n Some Systemd services will now be enabled..."
     sleep 5.0s
-    sed -i 's/#logind-check-graphical=false/logind-check-graphical=true/g' /etc/lightdm/lightdm.conf
-    sed -i 's/#greeter-session=example-gtk-gnome/greeter-session=lightdm-gtk-greeter/g' /etc/lightdm/lightdm.conf
+    sed -i 's/#logind-check-graphical=false/logind-check-graphical=true/g' /mnt/etc/lightdm/lightdm.conf
+    sed -i 's/#greeter-session=example-gtk-gnome/greeter-session=lightdm-gtk-greeter/g' /mnt/etc/lightdm/lightdm.conf
     arch-chroot /mnt systemctl enable bluetooth.service
     arch-chroot /mnt systemctl enable cups.socket
     arch-chroot /mnt systemctl enable lightdm.service
