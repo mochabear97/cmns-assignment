@@ -245,7 +245,7 @@ create_partitions () {
 # Format disk partitions
 format_partitions () {
     
-    if [ "$DISK" == "/dev/nvme" ]
+    if [[ "$DISK" == *"nvme"* ]]
         then
         clear
         print "Formatting partitions now..."
@@ -259,7 +259,7 @@ format_partitions () {
         swapon "$DISK"p2
     fi
 
-    if [ "$DISK" == "/dev/sda" ] || [ "$DISK" == "/dev/sdb" ]
+    if [[ "$DISK" == *"sd"* ]]
         then
         clear
         print "Formatting partitions now..."
