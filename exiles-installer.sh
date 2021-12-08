@@ -518,7 +518,7 @@ de_install () {
       meld neofetch networkmanager network-manager-applet npm p7zip \
       papirus-icon-theme pavucontrol picom pstoedit pulseaudio redshift \
       simple-scan system-config-printer thunderbird ufw unixodbc unrar vlc wget \
-      xdg-utils xdg-user-dirs xfce4 xfce4-goodies zip
+      xdg-utils xdg-user-dirs xorg-server xfce4 xfce4-goodies zip
     clear
     print "\n Some Systemd services will now be enabled..."
     sleep 5.0s
