@@ -358,16 +358,19 @@ network_selector () {
 
 # Select a desktop envrionment to be installed.
 desktop_select () {
+  clear
   print "**Desktop Environments Menu**"
   print "\n1) Cinnamon"
   print "2) GNOME"
   print "3) KDE"
   print "4) XFCE"
-  print "0) Cancel"
+  print "0) None (Advanced Users)"
   read -r -p "Please select an option: " choice
   case $choice in
-    0 ) exit
-	      ;;
+    0 ) clear
+        print "You selected to not install a desktop environment."
+        sleep 5.0s
+        ;;
     1 )	desktop=Cinnamon
         clear
         echo -e "\x1b[1;32mYou Selected\e[0m \x1b[0;33m$desktop\e[0m"
@@ -455,7 +458,7 @@ de_install () {
     print "Along with some other usefull applications."
     sleep 5.0s
     clear
-    pacman -S --noconfirm archlinux-appstream-data audacity binutils \
+    pacstrap /mnt archlinux-appstream-data audacity binutils \
       bluez bottom bzip2 chromium coin-or-mp cups cups-pdf dpkg exa gimp gnome \
       gpick libmythes libpaper libreoffice-fresh libwpg materia-gtk-theme \
       meld neofetch networkmanager npm p7zip papirus-icon-theme pstoedit \
@@ -478,7 +481,7 @@ de_install () {
     print "Along with some other usefull applications."
     sleep 3.0s
     clear
-    pacman -S --noconfirm archlinux-appstream-data ark audacity binutils \
+    pacstap /mnt archlinux-appstream-data ark audacity binutils \
       bluedevil bottom breeze-gtk bzip2 cargo chromium coin-or-mp cups cups-pdf \
       dolphin dpkg drkonqi elisa exa filelight gnome-keyring gwenview kalarm \
       kate kcalc kcolorchooser kde-gtk-config kdeplasma-addons kdiff3 kgamma5 \
@@ -508,7 +511,7 @@ de_install () {
     print "Along with some other usefull applications."
     sleep 3.0s
     clear
-    pacman -S --noconfirm archlinux-appstream-data ark audacity binutils \
+    pacstrap /mnt archlinux-appstream-data ark audacity binutils \
       blueman bottom bzip2 chromium coin-or-mp cups cups-pdf dpkg exa galculator \
       gimp gnome-disk-utility gnome-keyring gpick gvfs libcanberra libmythes \
       libpaper libreoffice-fresh libwpg lightdm lightdm-gtk-greeter lollypop \
