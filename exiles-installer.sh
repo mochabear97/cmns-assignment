@@ -33,8 +33,8 @@ print_y () {
 
 # Check if script is being ran as root and exit if it isn't.
 root_check () {
-    if [ "$EUID" -ne 0 ] 
-        then 
+    if [ "$EUID" -ne 0 ]
+        then
         print_w "Please run this sript as root."
         sleep 3.0s
         exit
@@ -244,7 +244,7 @@ create_partitions () {
 
 # Format disk partitions
 format_partitions () {
-    
+
     if [[ "$DISK" == *"nvme"* ]]
         then
         clear
@@ -290,7 +290,7 @@ microcode_detector () {
     fi
 }
 
-# Selecting a kernel to install. 
+# Selecting a kernel to install.
 kernel_selector () {
     clear
     print "***Kernels***"
@@ -325,7 +325,7 @@ network_selector () {
     print "4) I will do this on my own (ADVANCED USERS ONLY)"
     read -r -p "Insert the number of the corresponding networking utility. (1-4): " choice
     case $choice in
-        1 ) print "Installing IWD."    
+        1 ) print "Installing IWD."
             pacstrap /mnt iwd
             sleep 2.0s
             print "Enabling IWD."
@@ -338,7 +338,7 @@ network_selector () {
             print "Enabling dhcpcd."
             systemctl enable dhcpcd --root=/mnt &>/dev/null
             sleep 2.0s
-            ;; 
+            ;;
         3 ) print "Installing NetworkManager."
             pacstrap /mnt networkmanager
             pacstrap /mnt dhcpcd
@@ -354,6 +354,180 @@ network_selector () {
             clear
             network_selector
     esac
+}
+
+# Select a desktop envrionment to be installed.
+desktop_select () {
+  print "**Desktop Environments Menu**"
+  print "\n1) Cinnamon"
+  print "2) GNOME"
+  print "3) KDE"
+  print "4) XFCE"
+  print "0) Cancel"
+  read -r -p "Please select an option: " choice
+  case $choice in
+    0 ) exit
+	      ;;
+    1 )	desktop=Cinnamon
+        clear
+        echo -e "\x1b[1;32mYou Selected\e[0m \x1b[0;33m$desktop\e[0m"
+        print "$desktop is a desktop environment best suited for"
+        print "users who most comfortable with Windows 7"
+	      de_selection_check
+	      ;;
+    2 ) desktop=GNOME
+        clear
+	      echo -e "\x1b[1;32mYou Selected\e[0m \x1b[0;33m$desktop\e[0m"
+        print "$desktop is a very simplistic modern desktop environment"
+        print "best suited for users who are used to OSX(Macintosh)"
+	      de_selection_check
+	      ;;
+    3 ) desktop=KDE
+        clear
+	      echo -e "\x1b[1;32mYou Selected\e[0m \x1b[0;33m$desktop\e[0m"
+        print "$desktop is a very modern desktop environment built"
+        print "with Windows 10/11 users in mind"
+	      de_selection_check
+        ;;
+    4 ) desktop=XFCE
+        clear
+        echo -e "\x1b[1;32mYou Selected\e[0m \x1b[0;33m$desktop\e[0m"
+	      print "$desktop is an older desktop environment closely"
+        print "resembling Windows XP in terms of look and feel."
+        print "This DE is best suited for computers with older hardware."
+        de_selection_check
+	      ;;
+    * ) print_w "That is not a valid selection."
+        print_w "Please try again."
+        sleep 2.0s
+	      desktop_select
+  esac
+}
+
+# Selection Check for desktop environment.
+de_selection_check () {
+  read -r -p $'\e[0;33m[?] Is this correct? (y/n):\e[0m ' choice
+  case $choice in
+    [Yy] ) sleep 3.0s
+           ;;
+    [Nn] ) print "Please try again."
+	         sleep 2.0s
+	         clear
+           desktop_select
+	         ;;
+    * ) selection_check
+  esac
+}
+
+# Install a desktop environment of choice.
+de_install () {
+  if [ $desktop == Cinnamon ]
+     then
+     clear
+     print "Cinnamon desktop environemnt will now be installed."
+     print "Along with some other usefull applications."
+     sleep 3.0s
+     clear
+     pacstrap /mnt archlinux-appstream-data audacity binutils \
+      blueberry bottom bzip2 chromium cinnamon coin-or-mp cups cups-pdf dpkg exa \
+      file-roller galculator gimp gnome-disk-utility gnome-keyring \
+      gnome-terminal gpick gvfs libmythes libpaper libreoffice-fresh libwpg \
+      lightdm lightdm-gtk-greeter lollypop meld neofetch networkmanager \
+      network-manager-applet npm p7zip papirus-icon-theme pavucontrol pstoedit \
+      pulseaudio redshift simple-scan system-config-printer thunderbird ufw \
+      unixodbc unrar vlc wget xed xdg-utils xdg-user-dirs xorg-server xreader zip
+     clear
+     print "\nSome Systemd services will now be enabled..."
+     sleep 5.0s
+     sed -i 's/#logind-check-graphical=false/logind-check-graphical=true/g' /mnt/etc/lightdm/lightdm.conf
+     sed -i 's/#greeter-session=example-gtk-gnome/greeter-session=lightdm-gtk-greeter/g' /mnt/etc/lightdm/lightdm.conf
+     arch-chroot /mnt systemctl enable bluetooth.service
+     arch-chroot /mnt systemctl enable cups.socket
+     arch-chroot /mnt systemctl enable lightdm.service
+     arch-chroot /mnt systemctl enable NetworkManager.service
+     arch-chroot /mnt systemctl enable ufw.service
+  fi
+
+  if [ $desktop == GNOME ]
+    then
+    clear
+    print "$desktop desktop environment will now be installed."
+    print "Along with some other usefull applications."
+    sleep 5.0s
+    clear
+    pacman -S --noconfirm archlinux-appstream-data audacity binutils \
+      bluez bottom bzip2 chromium coin-or-mp cups cups-pdf dpkg exa gimp gnome \
+      gpick libmythes libpaper libreoffice-fresh libwpg materia-gtk-theme \
+      meld neofetch networkmanager npm p7zip papirus-icon-theme pstoedit \
+      pulseaudio simple-scan system-config-printer thunderbird ufw unixodbc \
+      unrar vlc wget xdg-utils xorg-server zip
+    clear
+    print "\nSome Systemd services will now be enabled..."
+    sleep 5.0s
+    arch-chroot /mnt systemctl enable bluetooth.service
+    arch-chroot /mnt systemctl enable cups.socket
+    arch-chroot /mnt systemctl enable gdm.service
+    arch-chroot /mnt systemctl enable NetworkManager.service
+    arch-chroot /mnt systemctl enable ufw.service
+  fi
+
+  if [ $desktop == KDE ]
+    then
+    clear
+    print "$desktop desktop environment will now be installed."
+    print "Along with some other usefull applications."
+    sleep 3.0s
+    clear
+    pacman -S --noconfirm archlinux-appstream-data ark audacity binutils \
+      bluedevil bottom breeze-gtk bzip2 cargo chromium coin-or-mp cups cups-pdf \
+      dolphin dpkg drkonqi elisa exa filelight gnome-keyring gwenview kalarm \
+      kate kcalc kcolorchooser kde-gtk-config kdeplasma-addons kdiff3 kgamma5 \
+      khelpcenter khotkeys kinfocenter kmag knotes konsole korganizer kscreen \
+      ksshaskpass kwallet-pam kwayland-integration kwrited libmythes libpaper \
+      libreoffice-fresh libwpg neofetch networkmanager npm okular oxygen \
+      p7zip plasma-desktop plasma-disks plasma-firewall plasma-nm \
+      plasma-pa plasma-systemmonitor plasma-thunderbolt plasma-vault \
+      plasma-workspace-wallpapers pstoedit sddm-kcm skanlite spectacle \
+      system-config-printer thunderbird ufw unixodbc unrar wget \
+      xdg-desktop-portal-kde xdg-utils xdg-user-dirs xorg-server zip
+    clear
+    print "\nSome Systemd services will now be enabled..."
+    sleep 5.0s
+    arch-chroot /mnt systemctl enable bluetooth.service
+    arch-chroot /mnt systemctl enable cups.socket
+    arch-chroot /mnt systemctl enable NetworkManager.service
+    arch-chroot /mnt systemctl enable sddm.service
+    arch-chroot /mnt systemctl enable ufw.service
+  fi
+
+
+  if [ $desktop == XFCE ]
+    then
+    clear
+    print "$desktop desktop environment will now be installed."
+    print "Along with some other usefull applications."
+    sleep 3.0s
+    clear
+    pacman -S --noconfirm archlinux-appstream-data ark audacity binutils \
+      blueman bottom bzip2 chromium coin-or-mp cups cups-pdf dpkg exa galculator \
+      gimp gnome-disk-utility gnome-keyring gpick gvfs libcanberra libmythes \
+      libpaper libreoffice-fresh libwpg lightdm lightdm-gtk-greeter lollypop \
+      meld neofetch networkmanager network-manager-applet npm p7zip \
+      papirus-icon-theme pavucontrol picom pstoedit pulseaudio redshift \
+      simple-scan system-config-printer thunderbird ufw unixodbc unrar vlc wget \
+      xdg-utils xdg-user-dirs xfce4 xfce4-goodies zip
+    clear
+    print "\n Some Systemd services will now be enabled..."
+    sleep 5.0s
+    sed -i 's/#logind-check-graphical=false/logind-check-graphical=true/g' /etc/lightdm/lightdm.conf
+    sed -i 's/#greeter-session=example-gtk-gnome/greeter-session=lightdm-gtk-greeter/g' /etc/lightdm/lightdm.conf
+    arch-chroot /mnt systemctl enable bluetooth.service
+    arch-chroot /mnt systemctl enable cups.socket
+    arch-chroot /mnt systemctl enable lightdm.service
+    arch-chroot /mnt systemctl enable NetworkManager.service
+    arch-chroot /mnt systemctl enable ufw.service
+    sleep 3.0s
+  fi
 }
 
 # Basic install of Arch Linux.
@@ -582,32 +756,6 @@ create_user () {
   fi
 }
 
-# Copy GUI install script to new system
-# to be ran after rebooting IF user was created.
-copy_important () {
-    if [ -n "$username" ]
-        then
-        clear
-        print_i "A useful GUI installation script will be copied" 
-        print_b "over to the new root and launched after install..."
-        sleep 8.0s
-        # Make the GUI script executable and copy it to /mnt/etc/profile.d/
-        chmod +x ~/cmns-assignment/exiles-desktop-installer.sh
-        cp ~/cmns-assignment/exiles-desktop-installer.sh /mnt/etc/profile.d/exiles-desktop-installer.sh
-    else
-        clear
-        print_w "You did not create a user, this means the second script"
-        print_y "will not be copied over and cannot be accessed"
-        print_y "after reboot. If you wanted to access it, please"
-        print_y "Reinstall Arch Linux using this script."
-        echo -e "\n"
-        print_i "The second script allows you to install packages and a"
-        print_b "desktop environment or window manager of your choosing"
-        print_b "It also includes an automated install of paru for AUR support if need be."
-        sleep 30.0s
-    fi
-}
-
 ###############
 #   Program   #
 ###############
@@ -632,7 +780,9 @@ format_partitions
 microcode_detector
 kernel_selector
 network_selector
+desktop_select
 basic_install
+de_install
 virtual_check
 laptop_check
 hostname_creator
@@ -643,7 +793,6 @@ system_setup
 gpu_driver_check
 root_set
 create_user
-copy_important
 
 # Print a message after installing then restart the system.
 clear
