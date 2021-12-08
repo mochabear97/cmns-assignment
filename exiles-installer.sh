@@ -244,17 +244,34 @@ create_partitions () {
 
 # Format disk partitions
 format_partitions () {
-    clear
-    print "Formatting partitions now..."
+    
+    if [ "$DISK" == "/dev/nvme" ]
+        then
+        clear
+        print "Formatting partitions now..."
 
-    mkfs.ext4 -F "$DISK"p3
-    mkswap "$DISK"p2
-    mkfs.fat -F 32 "$DISK"p1
-    mount "$DISK"p3 /mnt
-    mkdir /mnt/efi
-    mount "$DISK"p1 /mnt/efi
-    swapon "$DISK"p2
+        mkfs.ext4 -F "$DISK"p3
+        mkswap "$DISK"p2
+        mkfs.fat -F 32 "$DISK"p1
+        mount "$DISK"p3 /mnt
+        mkdir /mnt/efi
+        mount "$DISK"p1 /mnt/efi
+        swapon "$DISK"p2
+    fi
 
+    if [ "$DISK" == "/dev/sda" ] || [ "$DISK" == "/dev/sdb" ]
+        then
+        clear
+        print "Formatting partitions now..."
+
+        mkfs.ext4 -F "$DISK"3
+        mkswap "$DISK"2
+        mkfs.fat -F 32 "$DISK"1
+        mount "$DISK"3 /mnt
+        mkdir /mnt/efi
+        mount "$DISK"1 /mnt/efi
+        swapon "$DISK"2
+    fi
     sleep 5.0s
 }
 
@@ -349,6 +366,66 @@ basic_install () {
     base-devel man-db man-pages os-prober sudo texinfo
 }
 
+# Virtualization check.
+virtual_check () {
+    hypervisor=$(systemd-detect-virt)
+    case $hypervisor in
+        kvm )   print "KVM has been detected."
+                print "Installing guest tools."
+                pacstrap /mnt qemu-guest-agent
+                print "Enabling specific services for the guest tools."
+                systemctl enable qemu-guest-agent --root=/mnt &>/dev/null
+                ;;
+        vmware  )   print "VMWare Workstation/ESXi has been detected."
+                    print "Installing guest tools."
+                    pacstrap /mnt open-vm-tools
+                    print "Enabling specific services for the guest tools."
+                    systemctl enable vmtoolsd --root=/mnt &>/dev/null
+                    systemctl enable vmware-vmblock-fuse --root=/mnt &>/dev/null
+                    ;;
+        oracle )    print "VirtualBox has been detected."
+                    print "Installing guest tools."
+                    pacstrap /mnt virtualbox-guest-utils
+                    print "Enabling specific services for the guest tools."
+                    systemctl enable vboxservice --root=/mnt &>/dev/null
+                    ;;
+        microsoft ) print "Hyper-V has been detected."
+                    print "Installing guest tools."
+                    pacstrap /mnt hyperv
+                    print "Enabling specific services for the guest tools."
+                    systemctl enable hv_fcopy_daemon --root=/mnt &>/dev/null
+                    systemctl enable hv_kvp_daemon --root=/mnt &>/dev/null
+                    systemctl enable hv_vss_daemon --root=/mnt &>/dev/null
+                    ;;
+        * ) ;;
+    esac
+}
+
+# Laptop check (Install acpi & acpid)
+laptop_check () {
+    clear
+    read -r -p "Are you installing Arch Linux onto a laptop? (y/n): " choice
+    case $choice in
+        "" ) clear
+             print "Installing necessary files for laptops..."
+             sleep 2.0s
+             arch-chroot /mnt pacman -S --noconfirm acpi acpid
+             arch-chroot /mnt systemctl enable acpid.service
+             ;;
+        [Yy] ) clear
+               print "Installing necessary files for laptops..."
+               sleep 2.0s
+               arch-chroot /mnt pacman -S --noconfirm acpi acpid
+               arch-chroot /mnt systemctl enable acpid.service
+               ;;
+        [Nn] ) ;;
+        * ) clear
+            print "Not a valid selection. Please try again."
+            sleep 2.0s
+            laptop_check
+    esac
+}
+
 # Set a hostname for the new system.
 hostname_creator () {
     clear
@@ -420,31 +497,6 @@ system_setup () {
     print "\nCreating grub config file..."
     arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>/dev/null
     sleep 1.0s
-}
-
-# Laptop check (Install acpi & acpid)
-check_laptop () {
-    clear
-    read -r -p "Are you installing Arch Linux onto a laptop? (y/n): " choice
-    case $choice in
-        "" ) clear
-             print "Installing necessary files for laptops..."
-             sleep 2.0s
-             arch-chroot /mnt pacman -S --noconfirm acpi acpid
-             arch-chroot /mnt systemctl enable acpid.service
-             ;;
-        [Yy] ) clear
-               print "Installing necessary files for laptops..."
-               sleep 2.0s
-               arch-chroot /mnt pacman -S --noconfirm acpi acpid
-               arch-chroot /mnt systemctl enable acpid.service
-               ;;
-        [Nn] ) ;;
-        * ) clear
-            print "Not a valid selection. Please try again."
-            sleep 2.0s
-            check_laptop
-    esac
 }
 
 # Install GPU drivers if detected.
@@ -581,12 +633,13 @@ microcode_detector
 kernel_selector
 network_selector
 basic_install
+virtual_check
+laptop_check
 hostname_creator
 gen_stab
 locale_selector
 keyboard_selector
 system_setup
-check_laptop
 gpu_driver_check
 root_set
 create_user
