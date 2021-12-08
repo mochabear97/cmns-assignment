@@ -783,9 +783,7 @@ format_partitions
 microcode_detector
 kernel_selector
 network_selector
-desktop_select
 basic_install
-de_install
 virtual_check
 laptop_check
 hostname_creator
@@ -794,6 +792,8 @@ locale_selector
 keyboard_selector
 system_setup
 gpu_driver_check
+desktop_select
+de_install
 root_set
 create_user
 
